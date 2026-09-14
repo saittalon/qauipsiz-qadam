@@ -65,44 +65,44 @@ def create_ticket():
             return ticket
 
 
-def seed_demo_data():
-    # Safe to call more than once. This avoids duplicate demo users on restarts.
-    student = User.query.filter_by(username="student").first()
-    if not student:
-        student = User(
-            username="student",
-            password_hash=generate_password_hash("student123"),
-            role="student",
-            full_name="Оқушы",
-            class_name="8А",
-            age=14,
-        )
-        db.session.add(student)
-        try:
-            db.session.commit()
-        except IntegrityError:
-            db.session.rollback()
-            student = User.query.filter_by(username="student").first()
+def _get_or_create_demo_user(username, password, role, full_name, class_name=None, age=None, linked_student_id=None):
+    """Concurrency-safe demo user creation for multi-worker startup."""
+    user = User.query.filter_by(username=username).first()
+    if user:
+        return user
 
-    if not User.query.filter_by(username="parent").first():
-        db.session.add(User(
-            username="parent",
-            password_hash=generate_password_hash("parent123"),
-            role="parent",
-            full_name="Ата-ана",
-            linked_student_id=student.id if student else None,
-        ))
-    if not User.query.filter_by(username="teacher").first():
-        db.session.add(User(
-            username="teacher",
-            password_hash=generate_password_hash("teacher123"),
-            role="teacher",
-            full_name="Мұғалім",
-        ))
+    user = User(
+        username=username,
+        password_hash=generate_password_hash(password),
+        role=role,
+        full_name=full_name,
+        class_name=class_name,
+        age=age,
+        linked_student_id=linked_student_id,
+    )
+    db.session.add(user)
     try:
         db.session.commit()
+        return user
     except IntegrityError:
+        # Another Gunicorn worker may have inserted the same demo user first.
         db.session.rollback()
+        return User.query.filter_by(username=username).first()
+
+
+def seed_demo_data():
+    # Safe even if several Gunicorn workers import app.py at the same time.
+    student = _get_or_create_demo_user(
+        "student", "student123", "student", "Оқушы", class_name="8А", age=14
+    )
+
+    _get_or_create_demo_user(
+        "parent", "parent123", "parent", "Ата-ана",
+        linked_student_id=student.id if student else None,
+    )
+    _get_or_create_demo_user(
+        "teacher", "teacher123", "teacher", "Мұғалім"
+    )
 
     if student and Case.query.filter_by(student_id=student.id).count() == 0:
         db.session.add_all([
@@ -122,6 +122,7 @@ def seed_demo_data():
         try:
             db.session.commit()
         except IntegrityError:
+            # Harmless race during first boot with multiple workers.
             db.session.rollback()
 
 
