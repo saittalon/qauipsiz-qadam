@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.exc import IntegrityError
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from datetime import datetime
@@ -65,47 +66,63 @@ def create_ticket():
 
 
 def seed_demo_data():
-    if User.query.first():
-        return
+    # Safe to call more than once. This avoids duplicate demo users on restarts.
+    student = User.query.filter_by(username="student").first()
+    if not student:
+        student = User(
+            username="student",
+            password_hash=generate_password_hash("student123"),
+            role="student",
+            full_name="Оқушы",
+            class_name="8А",
+            age=14,
+        )
+        db.session.add(student)
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            student = User.query.filter_by(username="student").first()
 
-    student = User(
-        username="student",
-        password_hash=generate_password_hash("student123"),
-        role="student",
-        full_name="Оқушы",
-        class_name="8А",
-        age=14,
-    )
-    db.session.add(student)
-    db.session.flush()
+    if not User.query.filter_by(username="parent").first():
+        db.session.add(User(
+            username="parent",
+            password_hash=generate_password_hash("parent123"),
+            role="parent",
+            full_name="Ата-ана",
+            linked_student_id=student.id if student else None,
+        ))
+    if not User.query.filter_by(username="teacher").first():
+        db.session.add(User(
+            username="teacher",
+            password_hash=generate_password_hash("teacher123"),
+            role="teacher",
+            full_name="Мұғалім",
+        ))
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
 
-    db.session.add(User(
-        username="parent",
-        password_hash=generate_password_hash("parent123"),
-        role="parent",
-        full_name="Ата-ана",
-        linked_student_id=student.id,
-    ))
-    db.session.add(User(
-        username="teacher",
-        password_hash=generate_password_hash("teacher123"),
-        role="teacher",
-        full_name="Мұғалім",
-    ))
-
-    db.session.add(Case(
-        ticket=create_ticket(), student_id=student.id, student_name="Оқушы",
-        class_name="8А", age=14, category="Кибербуллинг",
-        description="Мессенджерде жағымсыз хабарламалар жіберіп жатыр.",
-        status="review", created_at=datetime.now().strftime("%Y-%m-%d %H:%M"), is_guest=False,
-    ))
-    db.session.add(Case(
-        ticket=create_ticket(), student_id=student.id, student_name="Оқушы",
-        class_name="8А", age=14, category="Мазақтау",
-        description="Сыныпта бірнеше рет мазақтады.",
-        status="solved", created_at=datetime.now().strftime("%Y-%m-%d %H:%M"), is_guest=False,
-    ))
-    db.session.commit()
+    if student and Case.query.filter_by(student_id=student.id).count() == 0:
+        db.session.add_all([
+            Case(
+                ticket=create_ticket(), student_id=student.id, student_name="Оқушы",
+                class_name="8А", age=14, category="Кибербуллинг",
+                description="Мессенджерде жағымсыз хабарламалар жіберіп жатыр.",
+                status="review", created_at=datetime.now().strftime("%Y-%m-%d %H:%M"), is_guest=False,
+            ),
+            Case(
+                ticket=create_ticket(), student_id=student.id, student_name="Оқушы",
+                class_name="8А", age=14, category="Мазақтау",
+                description="Сыныпта бірнеше рет мазақтады.",
+                status="solved", created_at=datetime.now().strftime("%Y-%m-%d %H:%M"), is_guest=False,
+            ),
+        ])
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
 
 
 with app.app_context():
