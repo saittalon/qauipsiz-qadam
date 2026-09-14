@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="kk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Қауіпсіз Қадам</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body data-role="{{ user.role if user else 'guest' }}">
+<div id="authOverlay" class="auth-overlay {% if user %}hidden{% endif %}">
+  <div class="auth-card">
+    <div class="auth-brand"><div class="logo">✋</div><div><h1>Қауіпсіз Қадам</h1><p>Өз рөліңізбен кіріңіз</p></div></div>
+    <div class="role-pills">
+      <button class="role-pill active" data-role="student">🎓 Оқушы</button>
+      <button class="role-pill" data-role="parent">👨‍👩‍👧 Ата-ана</button>
+      <button class="role-pill" data-role="teacher">👩‍🏫 Мұғалім</button>
+    </div>
+    <div class="login-grid">
+      <label>Логин<input id="loginUsername" value="student"></label>
+      <label>Құпиясөз<input id="loginPassword" type="password" value="student123"></label>
+    </div>
+    <button id="loginBtn" class="btn primary wide">Кіру</button>
+    <div id="loginError" class="form-error hidden"></div>
+    <div class="demo-box">
+      <b>Демо аккаунттар</b>
+      <span>Оқушы: student / student123</span>
+      <span>Ата-ана: parent / parent123</span>
+      <span>Мұғалім: teacher / teacher123</span>
+    </div>
+    <div class="auth-divider"><span>немесе</span></div>
+    <button id="openGuestCase" class="btn secondary wide">Тіркелмей тез өтініш беру</button>
+    <button id="openRegister" class="text-btn">Оқушы ретінде тез тіркелу</button>
+  </div>
+</div>
+
+<aside class="sidebar">
+  <div class="brand"><div class="logo">✋</div><div><b>Қауіпсіз Қадам</b><small>Жасөспірімдер үшін</small></div></div>
+  <nav class="nav">
+    <button class="navbtn active" data-screen="home">🏠 Басты бет</button>
+    <button class="navbtn" data-screen="sos">🆘 SOS — көмек</button>
+    <button class="navbtn auth-only" data-screen="cases">📄 Менің өтініштерім</button>
+    <button class="navbtn" data-screen="ai">🤖 AI навигатор</button>
+    <button class="navbtn" data-screen="tests">📘 Құқықтық тесттер</button>
+    <button class="navbtn auth-only" data-screen="mentor">👥 Жетекшіге жазу</button>
+    <button class="navbtn staff-only" data-screen="dashboard">📊 Бақылау панелі</button>
+  </nav>
+  <div class="sidebar-footer auth-only">
+    <div class="role-chip" id="sideRole">Рөл</div>
+    <button id="logoutBtn" class="logout-btn">Шығу</button>
+  </div>
+</aside>
+
+<main class="main">
+  <header class="topbar">
+    <input id="search" class="search" placeholder="🔎 Іздеу...">
+    <div class="userbox">
+      <span>🔔</span>
+      <div class="avatar">👤</div>
+      <div><b id="topName">{{ user.full_name if user else 'Қонақ' }}</b><small id="topRole"></small></div>
+    </div>
+  </header>
+
+  <div class="content">
+    <section id="home" class="screen active">
+      <div class="hero">
+        <div class="hero-copy">
+          <span class="badge">✦ Қауіпсіз қоғам — жарқын болашақ</span>
+          <h1>Сәлем! <span>👋</span></h1>
+          <p>Қауіпсіз қоғам — жарқын болашақ. Көмек сұрау — дұрыс қадам.</p>
+          <div class="actions">
+            <button class="btn primary go" data-screen="sos">❤ Маған көмек керек</button>
+            <button class="btn secondary" id="quickCaseBtn">⚡ Тез өтініш беру</button>
+          </div>
+        </div>
+        <div class="hero-art"><div class="orb o1"></div><div class="orb o2"></div><div class="teen"><div class="hair"></div><div class="head"></div><div class="body"></div></div></div>
+      </div>
+
+      <div class="stats public-stats">
+        <div class="stat">🕘 <div><strong>24/7</strong><span>Қолдау</span></div></div>
+        <div class="stat">🔒 <div><strong>Құпия</strong><span>Өтініш</span></div></div>
+        <div class="stat">⚡ <div><strong>1–2 мин</strong><span>Тез өтініш</span></div></div>
+      </div>
+
+      <div class="section-title"><h2>Негізгі мүмкіндіктер</h2></div>
+      <div class="feature-grid">
+        <button class="feature go" data-screen="sos"><div class="feature-icon red">SOS</div><div><b>SOS</b><small>Көмек керек</small></div></button>
+        <button class="feature go" data-screen="ai"><div class="feature-icon blue">💬</div><div><b>AI навигатор</b><small>Қазақша AI көмекшісі</small></div></button>
+        <button class="feature auth-only go" data-screen="cases"><div class="feature-icon green">🛡️</div><div><b>Менің өтініштерім</b><small>Өз өтініштеріңді бақыла</small></div></button>
+        <button class="feature go" data-screen="tests"><div class="feature-icon purple">📄</div><div><b>Тесттер</b><small>Әр жолы жаңа сұрақтар</small></div></button>
+        <button class="feature auth-only go" data-screen="mentor"><div class="feature-icon orange">👥</div><div><b>Жетекшіге жазу</b><small>Хабарлама жіберу</small></div></button>
+        <button class="feature staff-only go" data-screen="dashboard"><div class="feature-icon cyan">📊</div><div><b>Бақылау панелі</b><small>Рөлге сай статистика</small></div></button>
+      </div>
+    </section>
+
+    <section id="sos" class="screen">
+      <div class="screen-head"><button class="back go" data-screen="home">‹</button><div><h2>Маған көмек керек</h2><p>Жағдайды таңда немесе тез өтініш жібер.</p></div></div>
+      <div class="help-banner"><div><span class="mini-label">ҚАУІПСІЗ ҚАДАМ</span><h3>Сен жалғыз емессің!</h3><p>Қауіпті жағдайда қауіпсіз жерге барып, сенімді ересек адамға хабарла.</p></div><button class="btn primary" id="sosQuickBtn">⚡ Тез өтініш</button></div>
+      <div class="panel">
+        <div class="panel-title-row"><div><span class="mini-label">ЖАҒДАЙДЫ ТАҢДА</span><h3>Не болды?</h3></div><span class="panel-hint">Бір нұсқаны таңда</span></div>
+        <div class="sos-grid">
+          <button class="sos-card" data-type="Буллинг"><span>💥</span><b>Буллинг</b></button>
+          <button class="sos-card" data-type="Кибербуллинг"><span>💬</span><b>Кибербуллинг</b></button>
+          <button class="sos-card" data-type="Төбелес"><span>🥊</span><b>Төбелес</b></button>
+          <button class="sos-card" data-type="Қорқыту"><span>🛡️</span><b>Қорқыту</b></button>
+        </div>
+        <div id="sosFlow" class="help-flow hidden">
+          <div><span class="mini-label">ТАҢДАЛҒАН</span><h3 id="sosChosen"></h3><p>Қазір тікелей қауіп бар ма?</p></div>
+          <div class="flow-actions"><button id="dangerYes" class="btn danger">Иә, қауіп бар</button><button id="dangerNo" class="btn secondary">Жоқ</button><button id="flowCaseBtn" class="btn primary hidden">Өтініш толтыру</button></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="cases" class="screen auth-only">
+      <div class="screen-head"><button class="back go" data-screen="home">‹</button><div><h2 id="casesTitle">Менің өтініштерім</h2><p id="casesSub">Сізге қолжетімді өтініштер.</p></div></div>
+      <div class="case-tabs"><button class="case-tab active" data-filter="all">Барлығы</button><button class="case-tab" data-filter="review">Қаралуда</button><button class="case-tab" data-filter="solved">Шешілген</button></div>
+      <div id="caseList"></div>
+    </section>
+
+    <section id="ai" class="screen">
+      <div class="screen-head"><button class="back go" data-screen="home">‹</button><div><h2>AI навигатор</h2><p>Қазақша AI көмекшісі қауіпсіз әрекеттерді түсіндіреді.</p></div></div>
+      <div class="ai-grid">
+        <div class="panel"><div class="bot">🤖</div><textarea id="aiInput" placeholder="Жағдайды жазыңыз..."></textarea><button id="aiAsk" class="btn primary">Сұрақ жіберу</button></div>
+        <div class="panel" id="aiResult"><h3>Сәлем!</h3><p>Жағдайды жазыңыз. Демо навигатор қауіпсіз қадамдарды ұсынады.</p></div>
+      </div>
+    </section>
+
+    <section id="tests" class="screen">
+      <div class="screen-head"><button class="back go" data-screen="home">‹</button><div><h2>Құқықтық тесттер</h2><p>Әр тестте 10 кездейсоқ сұрақ және жауаптардың жаңа реті.</p></div></div>
+      <div class="quiz-shell">
+        <div class="quiz-top"><div><span class="mini-label">БІЛІМІҢДІ ТЕКСЕР</span><h2>Қауіпсіздік және құқық</h2></div><div class="quiz-score"><span id="quizStep">0 / 10</span><b id="quizPoints">0 ұпай</b></div></div>
+        <div class="quiz-progress"><i id="quizBar"></i></div>
+        <div class="quiz-card" id="quizCard"><div class="loading">Тестті бастау үшін төмендегі батырманы бас.</div><button id="startQuiz" class="btn primary">Жаңа тест бастау</button></div>
+      </div>
+    </section>
+
+    <section id="mentor" class="screen auth-only">
+      <div class="screen-head"><button class="back go" data-screen="home">‹</button><div><h2>Жетекшіге жазу</h2><p>Хабарламаңызды жауапты маманға жіберіңіз.</p></div></div>
+      <div class="mentor-layout">
+        <div class="panel mentor-info"><div class="mentor-avatar">👩‍🏫</div><h3>Жетекші / маман</h3><p>Сұрағыңызды қысқа және нақты жазыңыз. Хабарлама платформа ішінде сақталады.</p></div>
+        <div class="panel"><textarea id="mentorText" placeholder="Хабарламаңызды жазыңыз..."></textarea><button id="mentorSend" class="btn primary">Хабарлама жіберу</button><div id="mentorStatus" class="inline-status hidden"></div></div>
+      </div>
+    </section>
+
+    <section id="dashboard" class="screen staff-only">
+      <div class="screen-head"><button class="back go" data-screen="home">‹</button><div><h2>Бақылау панелі</h2><p id="dashboardDesc">Рөлге сай қолжетімді статистика.</p></div></div>
+      <div class="dashboard-stats">
+        <div class="dash-stat"><small>Барлық өтініш</small><strong id="statTotal">—</strong></div>
+        <div class="dash-stat"><small>Қаралуда</small><strong id="statReview">—</strong></div>
+        <div class="dash-stat"><small>Шешілген</small><strong id="statSolved">—</strong></div>
+      </div>
+      <div class="privacy-note"><b>Құпиялық:</b> оқушылар басқа оқушылардың өтініштерін көрмейді. Ата-ана тек өзіне байланыстырылған баланың өтініштерін көреді. Мұғалім барлық өтініштерді қарай алады.</div>
+    </section>
+  </div>
+</main>
+
+<div id="caseModal" class="modal">
+  <div class="modal-card">
+    <button class="modal-close" data-close="caseModal">✕</button>
+    <span class="mini-label">ТЕЗ ӨТІНІШ</span>
+    <h2>1–2 минутта өтініш жіберу</h2>
+    <p class="muted">Басқа оқушылар бұл деректерді көрмейді.</p>
+    <div class="form-grid">
+      <label>Аты-жөні<input id="caseName" placeholder="Аты-жөні"></label>
+      <label>Сыныбы<input id="caseClass" placeholder="8А"></label>
+      <label>Жасы<input id="caseAge" type="number" min="6" max="21" placeholder="14"></label>
+      <label>Тақырып<select id="caseCategory"><option>Буллинг</option><option>Кибербуллинг</option><option>Қорқыту</option><option>Төбелес</option><option>Психологиялық көмек</option><option>Басқа</option></select></label>
+    </div>
+    <label>Не болды?<textarea id="caseDescription" placeholder="Жағдайды қысқаша жазыңыз..."></textarea></label>
+    <div id="caseError" class="form-error hidden"></div>
+    <button id="submitCase" class="btn primary wide">Өтініш жіберу</button>
+  </div>
+</div>
+
+<div id="registerModal" class="modal">
+  <div class="modal-card">
+    <button class="modal-close" data-close="registerModal">✕</button>
+    <h2>Оқушыны тез тіркеу</h2>
+    <div class="form-grid">
+      <label>Аты-жөні<input id="regName"></label>
+      <label>Сыныбы<input id="regClass" placeholder="8А"></label>
+      <label>Жасы<input id="regAge" type="number"></label>
+      <label>Логин<input id="regUser"></label>
+      <label>Құпиясөз<input id="regPass" type="password"></label>
+    </div>
+    <div id="regError" class="form-error hidden"></div>
+    <button id="registerBtn" class="btn primary wide">Тіркелу және кіру</button>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+<script defer src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
