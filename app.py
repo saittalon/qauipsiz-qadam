@@ -242,6 +242,37 @@ def register_student():
     return jsonify({"ok": True})
 
 
+
+@app.get("/api/children")
+@require_login
+def get_children():
+    user = current_user()
+    if user.role != "parent":
+        return jsonify({"ok": False, "error": "Бұл бөлім ата-анаға арналған"}), 403
+    if not user.linked_student_id:
+        return jsonify([])
+    child = db.session.get(User, user.linked_student_id)
+    if not child or child.role != "student":
+        return jsonify([])
+    return jsonify([{"id":child.id,"full_name":child.full_name,"class_name":child.class_name,
+                     "age":child.age,"case_count":Case.query.filter_by(student_id=child.id).count()}])
+
+@app.get("/api/children/<int:child_id>/cases")
+@require_login
+def get_child_cases(child_id):
+    user = current_user()
+    if user.role != "parent" or user.linked_student_id != child_id:
+        return jsonify({"ok": False, "error": "Бұл бала сіздің аккаунтыңызға байланыстырылмаған"}), 403
+    child = db.session.get(User, child_id)
+    if not child or child.role != "student":
+        return jsonify({"ok": False, "error": "Оқушы табылмады"}), 404
+    status = request.args.get("status", "all")
+    query = Case.query.filter_by(student_id=child.id)
+    if status in ("review", "solved"): query = query.filter_by(status=status)
+    rows = query.order_by(Case.id.desc()).all()
+    return jsonify({"child":{"id":child.id,"full_name":child.full_name,"class_name":child.class_name,"age":child.age},
+                    "cases":[case_public(c) for c in rows]})
+
 @app.get("/api/cases")
 @require_login
 def get_cases():
@@ -276,6 +307,8 @@ def create_case():
         class_name = user.class_name or (data.get("class_name") or "").strip()
         age = user.age or data.get("age")
         is_guest = False
+    elif user:
+        return jsonify({"ok": False, "error": "Өтінішті оқушы аккаунтынан жіберіңіз"}), 403
     else:
         student_id = None
         student_name = (data.get("student_name") or "").strip()
