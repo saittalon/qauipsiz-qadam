@@ -34,32 +34,33 @@ async function refreshMe(){
   applyPermissions();
 }
 function applyPermissions(){
-  const role=me?.role||"guest";
-  const logged=!!me;
+  const role=me?.role||"guest", logged=!!me;
   $$(".auth-only").forEach(el=>el.classList.toggle("hidden",!logged));
-  $$(".staff-only").forEach(el=>el.classList.toggle("hidden",!(role==="parent"||role==="teacher")));
+  $$(".student-only").forEach(el=>el.classList.toggle("hidden",role!=="student"));
+  $$(".parent-only").forEach(el=>el.classList.toggle("hidden",role!=="parent"));
+  $$(".teacher-only").forEach(el=>el.classList.toggle("hidden",role!=="teacher"));
+  $$(".guest-only").forEach(el=>el.classList.toggle("hidden",role!=="guest"));
   if($("topName")) $("topName").textContent=me?.full_name||"Қонақ";
   if($("topRole")) $("topRole").textContent=roleLabel(role);
   if($("sideRole")) $("sideRole").textContent=roleLabel(role);
-
   if(role==="teacher"){
-    if($("casesTitle")) $("casesTitle").textContent="Оқушылардың өтініштері";
-    if($("casesSub")) $("casesSub").textContent="Мұғалімге қолжетімді барлық өтініш.";
-  }else if(role==="parent"){
-    if($("casesTitle")) $("casesTitle").textContent="Баланың өтініштері";
-    if($("casesSub")) $("casesSub").textContent="Сізге байланыстырылған оқушының өтініштері.";
-  }else{
-    if($("casesTitle")) $("casesTitle").textContent="Менің өтініштерім";
-    if($("casesSub")) $("casesSub").textContent="Тек өз өтініштерің көрінеді.";
+    $("casesTitle").textContent="Оқушылардың өтініштері";
+    $("casesSub").textContent="Мұғалім барлық оқушылардың өтініштерін қарай алады.";
+  }else if(role==="student"){
+    $("casesTitle").textContent="Менің өтініштерім";
+    $("casesSub").textContent="Бұл жерде тек өз өтініштерің көрінеді.";
   }
 }
 
 function showScreen(id){
-  if((id==="cases"||id==="mentor")&&!me){ $("authOverlay")?.classList.remove("hidden"); return; }
-  if(id==="dashboard" && !(me?.role==="parent"||me?.role==="teacher")){ toast("Бұл бөлім сіздің рөліңізге қолжетімсіз"); return; }
+  if((id==="cases"||id==="mentor"||id==="children")&&!me){ $("authOverlay")?.classList.remove("hidden"); return; }
+  if(id==="cases" && me?.role==="parent") id="children";
+  if(id==="children" && me?.role!=="parent"){ toast("Бұл бөлім ата-анаға арналған"); return; }
+  if(id==="dashboard" && me?.role!=="teacher"){ toast("Бұл бөлім сіздің рөліңізге қолжетімсіз"); return; }
   $$(".screen").forEach(s=>s.classList.toggle("active",s.id===id));
   $$(".navbtn").forEach(n=>n.classList.toggle("active",n.dataset.screen===id));
   if(id==="cases") loadCases("all");
+  if(id==="children") loadChildren();
   if(id==="dashboard") loadStats();
   window.scrollTo({top:0,behavior:"smooth"});
 }
@@ -153,18 +154,47 @@ async function loadCases(status="all"){
       <div class="request-top"><div><h3>${esc(c.category)}</h3><div class="request-meta">#${esc(c.ticket)} · ${esc(c.created_at)}</div></div>
       <span class="status ${c.status==="solved"?"solved":"review"}">${c.status==="solved"?"Шешілді":"Қаралуда"}</span></div>
       <div class="request-desc">${esc(c.description)}</div>
-      ${(me?.role==="teacher"||me?.role==="parent")?`<div class="private-meta"><span>👤 ${esc(c.student_name)}</span><span>🏫 ${esc(c.class_name)}</span><span>🎂 ${esc(c.age)}</span>${c.is_guest?'<span>⚡ Тіркелмей жіберілген</span>':''}</div>`:""}
+      ${(me?.role==="teacher")?`<div class="private-meta"><span>👤 ${esc(c.student_name)}</span><span>🏫 ${esc(c.class_name)}</span><span>🎂 ${esc(c.age)}</span>${c.is_guest?'<span>⚡ Тіркелмей жіберілген</span>':''}</div>`:""}
     </article>`).join("");
 }
 $$(".case-tab").forEach(tab=>tab.addEventListener("click",()=>{
   $$(".case-tab").forEach(x=>x.classList.remove("active"));tab.classList.add("active");loadCases(tab.dataset.filter);
 }));
 
+
+let selectedChildId=null;
+async function loadChildren(){
+  const root=$("childrenList"); if(!root)return;
+  root.innerHTML='<div class="panel">Жүктелуде...</div>';
+  const {res,data}=await api("/api/children");
+  if(!res.ok){root.innerHTML='<div class="panel">Балалар тізімі қолжетімсіз.</div>';return}
+  if(!data.length){root.innerHTML='<div class="panel"><h3>Бала байланыстырылмаған</h3><p>Әкімші ата-ана аккаунтына оқушыны байланыстыруы керек.</p></div>';$("childCasesPanel")?.classList.add("hidden");return}
+  root.innerHTML=data.map(ch=>`<button class="child-card" data-child-id="${ch.id}"><div class="child-avatar">🎓</div><div class="child-main"><b>${esc(ch.full_name)}</b><span>${esc(ch.class_name||"—")} сынып · ${esc(ch.age||"—")} жас</span></div><div class="child-count"><strong>${ch.case_count}</strong><small>өтініш</small></div></button>`).join("");
+  $$(".child-card").forEach(btn=>btn.addEventListener("click",()=>selectChild(Number(btn.dataset.childId))));
+  if(!selectedChildId||!data.some(x=>x.id===selectedChildId))selectedChildId=data[0].id;
+  selectChild(selectedChildId);
+}
+async function selectChild(childId,status="all"){
+  selectedChildId=childId;
+  $$(".child-card").forEach(x=>x.classList.toggle("active",Number(x.dataset.childId)===childId));
+  $("childCasesPanel")?.classList.remove("hidden");
+  const root=$("childCaseList"); root.innerHTML='<div class="empty-state">Жүктелуде...</div>';
+  const {res,data}=await api(`/api/children/${childId}/cases?status=${encodeURIComponent(status)}`);
+  if(!res.ok){root.innerHTML='<div class="empty-state">Өтініштерді жүктеу мүмкін болмады.</div>';return}
+  $("selectedChildName").textContent=data.child.full_name;
+  if(!data.cases.length){root.innerHTML='<div class="empty-state">Бұл балада әзірге өтініш жоқ.</div>';return}
+  root.innerHTML=data.cases.map(c=>`<article class="case-card"><div class="case-top"><b>#${esc(c.ticket)}</b><span class="status ${esc(c.status)}">${c.status==="solved"?"Шешілген":"Қаралуда"}</span></div><h3>${esc(c.category)}</h3><p>${esc(c.description)}</p><div class="private-meta"><span>🏫 ${esc(c.class_name)}</span><span>🎂 ${esc(c.age)}</span><span>🕘 ${esc(c.created_at)}</span></div></article>`).join("");
+}
+$$("[data-child-filter]").forEach(tab=>tab.addEventListener("click",()=>{
+  $$("[data-child-filter]").forEach(x=>x.classList.remove("active"));tab.classList.add("active");
+  if(selectedChildId)selectChild(selectedChildId,tab.dataset.childFilter);
+}));
+
 async function loadStats(){
   const {res,data}=await api("/api/stats");
   if(!res.ok){toast(data.error||"Статистика қолжетімсіз");return}
   $("statTotal").textContent=data.total;$("statReview").textContent=data.review;$("statSolved").textContent=data.solved;
-  $("dashboardDesc").textContent=me?.role==="teacher"?"Барлық өтініш бойынша статистика.":"Балаңыздың өтініштері бойынша статистика.";
+  $("dashboardDesc").textContent="Барлық оқушылардың өтініштері бойынша статистика.";
 }
 
 $("mentorSend")?.addEventListener("click",async()=>{
