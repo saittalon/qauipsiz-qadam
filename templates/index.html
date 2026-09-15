@@ -43,7 +43,8 @@
     <button class="navbtn auth-only teacher-only" data-screen="cases">📋 Оқушылар өтініштері</button>
     <button class="navbtn" data-screen="ai">🤖 AI навигатор</button>
     <button class="navbtn" data-screen="tests">📘 Құқықтық тесттер</button>
-    <button class="navbtn auth-only" data-screen="mentor">👥 Жетекшіге жазу</button>
+    <button class="navbtn auth-only student-only parent-only" data-screen="mentor">👥 Жетекшіге жазу</button>
+    <button class="navbtn auth-only teacher-only" data-screen="mentor">💬 Оқушыға жазу</button>
     <button class="navbtn teacher-only" data-screen="dashboard">📊 Бақылау панелі</button>
   </nav>
   <div class="sidebar-footer auth-only">
@@ -148,10 +149,29 @@
     </section>
 
     <section id="mentor" class="screen auth-only">
-      <div class="screen-head"><button class="back go" data-screen="home">‹</button><div><h2>Жетекшіге жазу</h2><p>Хабарламаңызды жауапты маманға жіберіңіз.</p></div></div>
-      <div class="mentor-layout">
-        <div class="panel mentor-info"><div class="mentor-avatar">👩‍🏫</div><h3>Жетекші / маман</h3><p>Сұрағыңызды қысқа және нақты жазыңыз. Хабарлама платформа ішінде сақталады.</p></div>
-        <div class="panel"><textarea id="mentorText" placeholder="Хабарламаңызды жазыңыз..."></textarea><button id="mentorSend" class="btn primary">Хабарлама жіберу</button><div id="mentorStatus" class="inline-status hidden"></div></div>
+      <div class="screen-head"><button class="back go" data-screen="home">‹</button><div><h2 id="chatTitle">Жетекшіге жазу</h2><p id="chatSubtitle">Платформа ішіндегі қауіпсіз хабарламалар.</p></div></div>
+
+      <div id="teacherChatLayout" class="teacher-only chat-shell">
+        <div class="panel student-list-panel">
+          <h3>Оқушылар</h3>
+          <p class="muted">Хабарлама жіберетін оқушыны таңдаңыз.</p>
+          <div id="chatStudentList" class="chat-student-list"></div>
+        </div>
+        <div class="panel chat-panel">
+          <div class="chat-head"><div><b id="chatStudentName">Оқушыны таңдаңыз</b><small id="chatStudentMeta"></small></div></div>
+          <div id="teacherMessages" class="message-list"><div class="empty-state">Сол жақтан оқушыны таңдаңыз.</div></div>
+          <div class="chat-compose"><textarea id="teacherChatText" placeholder="Оқушыға хабарлама жазыңыз..."></textarea><button id="teacherChatSend" class="btn primary">Жіберу</button></div>
+          <div id="teacherChatStatus" class="inline-status hidden"></div>
+        </div>
+      </div>
+
+      <div id="familyChatLayout" class="student-only parent-only">
+        <div class="panel chat-panel">
+          <div class="chat-head"><div><b>Жетекші / мұғалім</b><small>Хабарламалар осы жерде сақталады.</small></div></div>
+          <div id="familyMessages" class="message-list"></div>
+          <div class="chat-compose"><textarea id="familyChatText" placeholder="Жетекшіге хабарлама жазыңыз..."></textarea><button id="familyChatSend" class="btn primary">Жіберу</button></div>
+          <div id="familyChatStatus" class="inline-status hidden"></div>
+        </div>
       </div>
     </section>
 
