@@ -34,3 +34,18 @@ body[data-role="student"] section.student-only,
 body[data-role="parent"] section.parent-only,
 body[data-role="teacher"] section.teacher-only{display:block!important}
 .hidden{display:none!important}
+
+.chat-shell{display:grid!important;grid-template-columns:320px minmax(0,1fr);gap:16px;align-items:stretch}
+.student-list-panel{min-height:560px}.chat-student-list{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+.chat-student{display:flex;gap:11px;align-items:center;width:100%;padding:12px;border:1px solid rgba(130,165,255,.14);border-radius:14px;background:rgba(8,24,57,.55);color:inherit;text-align:left;cursor:pointer}
+.chat-student.active,.chat-student:hover{border-color:rgba(62,158,255,.7);background:rgba(29,89,165,.28)}
+.chat-student>div:last-child{display:flex;flex-direction:column;min-width:0}.chat-student small{opacity:.65;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:230px}
+.student-dot{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:rgba(69,126,255,.16);flex:0 0 auto}
+.chat-panel{display:flex!important;flex-direction:column;min-height:560px}.chat-head{padding-bottom:12px;border-bottom:1px solid rgba(130,165,255,.14)}
+.chat-head>div{display:flex;flex-direction:column;gap:4px}.chat-head small{opacity:.65}
+.message-list{flex:1;min-height:330px;max-height:480px;overflow:auto;padding:16px 4px;display:flex;flex-direction:column;gap:10px}
+.chat-message{max-width:76%;padding:11px 14px;border-radius:16px;background:rgba(255,255,255,.07);align-self:flex-start}
+.chat-message.mine{align-self:flex-end;background:rgba(25,122,255,.28);border:1px solid rgba(69,156,255,.25)}
+.chat-message small{display:block;margin-top:6px;opacity:.55;font-size:11px}
+.chat-compose{display:flex;gap:10px;align-items:flex-end;border-top:1px solid rgba(130,165,255,.14);padding-top:12px}.chat-compose textarea{min-height:72px;flex:1}
+@media(max-width:850px){.chat-shell{grid-template-columns:1fr}.student-list-panel{min-height:auto}.chat-panel{min-height:480px}}
