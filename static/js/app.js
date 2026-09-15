@@ -146,20 +146,18 @@ $$(".sos-card").forEach(card=>card.addEventListener("click",()=>{
   $("flowCaseBtn").classList.add("hidden");
   if($("dangerResult")){$("dangerResult").classList.add("hidden");$("dangerResult").innerHTML="";}
 }));
-$("dangerYes")?.addEventListener("click",()=>{
-  const result=$("dangerResult");
-  if(result){
-    result.innerHTML="<b>Қазір қауіп бар.</b> Қауіпсіз жерге барыңыз, сенімді ересек адамға дереу хабарлаңыз. Тікелей қауіп болса, 112 нөміріне қоңырау шалыңыз.";
-    result.classList.remove("hidden");
-  }
-  const btn=$("flowCaseBtn");
-  if(btn){btn.textContent="Өтініш жіберу";btn.classList.remove("hidden");}
+$("dangerYes")?.addEventListener("click",(e)=>{
+  e.preventDefault();
+  // If there is immediate danger, open the application form immediately.
+  // The selected SOS category is already stored in selectedCategory.
+  prefillAndOpenCase();
 });
 
-$("dangerNo")?.addEventListener("click",()=>{
+$("dangerNo")?.addEventListener("click",(e)=>{
+  e.preventDefault();
   const result=$("dangerResult");
   if(result){
-    result.innerHTML="Тікелей қауіп болмаса да, жағдайды тіркеп қоюға болады. Өтініш жіберіңіз немесе AI навигатордан кеңес алыңыз.";
+    result.innerHTML="Тікелей қауіп жоқ. Жағдайды өтініш ретінде тіркеуге немесе AI навигатордан кеңес алуға болады.";
     result.classList.remove("hidden");
   }
   const btn=$("flowCaseBtn");
