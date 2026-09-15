@@ -389,32 +389,43 @@ AI_SYSTEM_PROMPT = """Сен «Қауіпсіз Қадам» платформа�
 
 def ai_config():
     return {
-        "base_url": os.environ.get("AI_BASE_URL", "http://127.0.0.1:11434").rstrip("/"),
-        "model": os.environ.get("AI_MODEL", "hf.co/mradermacher/Qwen3.5-4B-Kazakh-GGUF:Q4_K_M"),
-        "timeout": int(os.environ.get("AI_TIMEOUT", "90")),
+        "base_url": os.environ.get("AI_BASE_URL", "https://openrouter.ai/api/v1").rstrip("/"),
+        "api_key": os.environ.get("OPENROUTER_API_KEY", "").strip(),
+        "model": os.environ.get("AI_MODEL", "qwen/qwen3.5-9b"),
+        "timeout": int(os.environ.get("AI_TIMEOUT", "120")),
         "enabled": os.environ.get("AI_ENABLED", "1") == "1",
     }
 
 
-def ask_ollama(message):
+def ask_openrouter(message):
     cfg = ai_config()
     if not cfg["enabled"]:
         raise RuntimeError("AI disabled")
+    if not cfg["api_key"]:
+        raise RuntimeError("OPENROUTER_API_KEY is not configured")
 
     payload = {
         "model": cfg["model"],
-        "stream": False,
-        "think": False,
         "messages": [
             {"role": "system", "content": AI_SYSTEM_PROMPT},
             {"role": "user", "content": message},
         ],
-        "options": {"temperature": 0.3},
+        "temperature": 0.3,
     }
-    response = requests.post(f'{cfg["base_url"]}/api/chat', json=payload, timeout=cfg["timeout"])
+    headers = {
+        "Authorization": f'Bearer {cfg["api_key"]}',
+        "Content-Type": "application/json",
+    }
+    response = requests.post(
+        f'{cfg["base_url"]}/chat/completions',
+        headers=headers,
+        json=payload,
+        timeout=cfg["timeout"],
+    )
     response.raise_for_status()
     data = response.json()
-    text = ((data.get("message") or {}).get("content") or "").strip()
+    choices = data.get("choices") or []
+    text = (((choices[0] if choices else {}).get("message") or {}).get("content") or "").strip()
     if not text:
         raise RuntimeError("AI returned an empty response")
     return text
@@ -428,17 +439,28 @@ def ai():
         return jsonify({"ok": False, "error": "Жағдайды жазыңыз"}), 400
 
     try:
-        text = ask_ollama(message)
+        text = ask_openrouter(message)
         return jsonify({
             "ok": True,
             "category": "AI қауіпсіздік навигаторы",
             "answer_text": text,
             "disclaimer": "AI жауабы ақпараттық көмек үшін берілген. Тікелей қауіп болса, сенімді ересек адамға немесе жедел көмек қызметіне хабарласыңыз.",
         })
-    except requests.exceptions.ConnectionError:
-        return jsonify({"ok": False, "error": "AI серверіне қосылу мүмкін болмады. Ollama немесе AI_BASE_URL параметрін тексеріңіз."}), 503
     except requests.exceptions.Timeout:
         return jsonify({"ok": False, "error": "AI жауабы тым ұзақ күттірді. Қайта көріңіз."}), 504
+    except requests.exceptions.HTTPError as exc:
+        status = exc.response.status_code if exc.response is not None else 502
+        if status == 401:
+            error = "OpenRouter API кілті жарамсыз. Railway-дегі OPENROUTER_API_KEY параметрін тексеріңіз."
+        elif status == 402:
+            error = "OpenRouter балансын тексеріңіз."
+        elif status == 429:
+            error = "AI сұрау лимитіне жетті. Біраздан кейін қайта көріңіз."
+        else:
+            error = f"OpenRouter қатесі ({status})."
+        return jsonify({"ok": False, "error": error}), 502
+    except requests.exceptions.RequestException:
+        return jsonify({"ok": False, "error": "OpenRouter серверіне қосылу мүмкін болмады."}), 503
     except Exception as exc:
         app.logger.exception("AI request failed")
         return jsonify({"ok": False, "error": f"AI қатесі: {str(exc)[:160]}"}), 502
@@ -448,12 +470,18 @@ def ai():
 def ai_status():
     cfg = ai_config()
     if not cfg["enabled"]:
-        return jsonify({"ok": True, "enabled": False, "reachable": False, "model": cfg["model"]})
+        return jsonify({"ok": True, "enabled": False, "reachable": False, "model": cfg["model"], "provider": "openrouter"})
+    if not cfg["api_key"]:
+        return jsonify({"ok": True, "enabled": True, "reachable": False, "model": cfg["model"], "provider": "openrouter", "configured": False})
     try:
-        r = requests.get(f'{cfg["base_url"]}/api/tags', timeout=5)
-        return jsonify({"ok": True, "enabled": True, "reachable": r.ok, "model": cfg["model"]})
+        r = requests.get(
+            f'{cfg["base_url"]}/models',
+            headers={"Authorization": f'Bearer {cfg["api_key"]}'},
+            timeout=10,
+        )
+        return jsonify({"ok": True, "enabled": True, "reachable": r.ok, "model": cfg["model"], "provider": "openrouter", "configured": True})
     except requests.RequestException:
-        return jsonify({"ok": True, "enabled": True, "reachable": False, "model": cfg["model"]})
+        return jsonify({"ok": True, "enabled": True, "reachable": False, "model": cfg["model"], "provider": "openrouter", "configured": True})
 
 
 @app.get("/health")
