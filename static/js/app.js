@@ -53,6 +53,8 @@ function applyPermissions(){
 }
 
 function showScreen(id){
+  if(id==="sos" && me && me.role!=="student"){ toast("Бұл бөлім тек оқушыға арналған"); id="home"; }
+
   if((id==="cases"||id==="mentor"||id==="children")&&!me){ $("authOverlay")?.classList.remove("hidden"); return; }
   if(id==="cases" && me?.role==="parent") id="children";
   if(id==="children" && me?.role!=="parent"){ toast("Бұл бөлім ата-анаға арналған"); return; }
