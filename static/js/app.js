@@ -64,6 +64,7 @@ function showScreen(id){
   if(id==="cases") loadCases("all");
   if(id==="children") loadChildren();
   if(id==="dashboard") loadStats();
+  if(id==="mentor") loadChat();
   window.scrollTo({top:0,behavior:"smooth"});
 }
 $$(".go,.navbtn").forEach(b=>b.addEventListener("click",()=>b.dataset.screen&&showScreen(b.dataset.screen)));
@@ -199,12 +200,67 @@ async function loadStats(){
   $("dashboardDesc").textContent="Барлық оқушылардың өтініштері бойынша статистика.";
 }
 
-$("mentorSend")?.addEventListener("click",async()=>{
-  const msg=$("mentorText").value.trim(), status=$("mentorStatus");
-  if(!msg){status.textContent="Хабарлама жазыңыз.";status.classList.remove("hidden");return}
-  const {res,data}=await api("/api/mentor",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:msg})});
-  status.textContent=res.ok?"Хабарлама жіберілді ✓":(data.error||"Қате");
-  status.classList.remove("hidden"); if(res.ok)$("mentorText").value="";
+let selectedChatStudentId=null;
+
+async function loadChat(){
+  if(me?.role==="teacher"){
+    $("chatTitle").textContent="Оқушыға жазу";
+    $("chatSubtitle").textContent="Оқушыны таңдап, оған тікелей хабарлама жіберіңіз.";
+    await loadChatStudents();
+  }else{
+    $("chatTitle").textContent="Жетекшіге жазу";
+    $("chatSubtitle").textContent=me?.role==="parent"?"Балаңыз бойынша жетекшімен хабарласыңыз.":"Жетекшіге хабарлама жіберіп, жауабын осы жерден көріңіз.";
+    await loadFamilyMessages();
+  }
+}
+
+async function loadChatStudents(){
+  const root=$("chatStudentList");
+  const {res,data}=await api("/api/chat/students");
+  if(!res.ok){root.innerHTML='<div class="empty-state">Оқушыларды жүктеу мүмкін болмады.</div>';return}
+  if(!data.length){root.innerHTML='<div class="empty-state">Оқушылар жоқ.</div>';return}
+  root.innerHTML=data.map(s=>`<button class="chat-student ${selectedChatStudentId===s.id?"active":""}" data-chat-student="${s.id}"><div class="student-dot">🎓</div><div><b>${esc(s.full_name)}</b><small>${esc(s.class_name||"—")} сынып${s.last_message?` · ${esc(s.last_message)}`:""}</small></div></button>`).join("");
+  $$("[data-chat-student]").forEach(b=>b.addEventListener("click",()=>openStudentChat(Number(b.dataset.chatStudent))));
+  if(!selectedChatStudentId) openStudentChat(data[0].id);
+}
+
+async function openStudentChat(id){
+  selectedChatStudentId=id;
+  $$("[data-chat-student]").forEach(b=>b.classList.toggle("active",Number(b.dataset.chatStudent)===id));
+  const {res,data}=await api(`/api/chat/messages?student_id=${id}`);
+  if(!res.ok){toast(data.error||"Чатты ашу мүмкін болмады");return}
+  $("chatStudentName").textContent=data.student.full_name;
+  $("chatStudentMeta").textContent=(data.student.class_name||"—")+" сынып";
+  renderMessages($("teacherMessages"),data.messages);
+}
+
+async function loadFamilyMessages(){
+  const {res,data}=await api("/api/chat/messages");
+  if(!res.ok){$("familyMessages").innerHTML=`<div class="empty-state">${esc(data.error||"Чатты ашу мүмкін болмады")}</div>`;return}
+  renderMessages($("familyMessages"),data.messages);
+}
+
+function renderMessages(root,messages){
+  if(!messages.length){root.innerHTML='<div class="empty-state">Әзірге хабарлама жоқ.</div>';return}
+  root.innerHTML=messages.map(m=>`<div class="chat-message ${m.mine?"mine":"theirs"}"><div>${esc(m.message).replaceAll("\n","<br>")}</div><small>${m.sender_role==="teacher"?"Мұғалім":m.sender_role==="parent"?"Ата-ана":"Оқушы"} · ${esc(m.created_at)}</small></div>`).join("");
+  root.scrollTop=root.scrollHeight;
+}
+
+$("teacherChatSend")?.addEventListener("click",async()=>{
+  const text=$("teacherChatText").value.trim(), status=$("teacherChatStatus");
+  if(!selectedChatStudentId){toast("Алдымен оқушыны таңдаңыз");return}
+  if(!text){toast("Хабарлама жазыңыз");return}
+  const {res,data}=await api("/api/chat/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({student_id:selectedChatStudentId,message:text})});
+  status.textContent=res.ok?"Жіберілді ✓":(data.error||"Қате");status.classList.remove("hidden");
+  if(res.ok){$("teacherChatText").value="";await openStudentChat(selectedChatStudentId);await loadChatStudents();}
+});
+
+$("familyChatSend")?.addEventListener("click",async()=>{
+  const text=$("familyChatText").value.trim(), status=$("familyChatStatus");
+  if(!text){toast("Хабарлама жазыңыз");return}
+  const {res,data}=await api("/api/chat/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:text})});
+  status.textContent=res.ok?"Жіберілді ✓":(data.error||"Қате");status.classList.remove("hidden");
+  if(res.ok){$("familyChatText").value="";await loadFamilyMessages();}
 });
 
 $("aiAsk")?.addEventListener("click",async()=>{
