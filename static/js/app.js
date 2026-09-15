@@ -141,9 +141,30 @@ $("submitCase")?.addEventListener("click",async()=>{
 $$(".sos-card").forEach(card=>card.addEventListener("click",()=>{
   selectedCategory=card.dataset.type;
   $$(".sos-card").forEach(x=>x.classList.remove("selected"));card.classList.add("selected");
-  $("sosChosen").textContent=selectedCategory; $("sosFlow").classList.remove("hidden"); $("flowCaseBtn").classList.add("hidden");
+  $("sosChosen").textContent=selectedCategory;
+  $("sosFlow").classList.remove("hidden");
+  $("flowCaseBtn").classList.add("hidden");
+  if($("dangerResult")){$("dangerResult").classList.add("hidden");$("dangerResult").innerHTML="";}
 }));
-["dangerYes","dangerNo"].forEach(id=>$(id)?.addEventListener("click",()=>$("flowCaseBtn").classList.remove("hidden")));
+$("dangerYes")?.addEventListener("click",()=>{
+  const result=$("dangerResult");
+  if(result){
+    result.innerHTML="<b>Қазір қауіп бар.</b> Қауіпсіз жерге барыңыз, сенімді ересек адамға дереу хабарлаңыз. Тікелей қауіп болса, 112 нөміріне қоңырау шалыңыз.";
+    result.classList.remove("hidden");
+  }
+  const btn=$("flowCaseBtn");
+  if(btn){btn.textContent="Өтініш жіберу";btn.classList.remove("hidden");}
+});
+
+$("dangerNo")?.addEventListener("click",()=>{
+  const result=$("dangerResult");
+  if(result){
+    result.innerHTML="Тікелей қауіп болмаса да, жағдайды тіркеп қоюға болады. Өтініш жіберіңіз немесе AI навигатордан кеңес алыңыз.";
+    result.classList.remove("hidden");
+  }
+  const btn=$("flowCaseBtn");
+  if(btn){btn.textContent="Өтініш жіберу";btn.classList.remove("hidden");}
+});
 $("flowCaseBtn")?.addEventListener("click",prefillAndOpenCase);
 
 async function loadCases(status="all"){
