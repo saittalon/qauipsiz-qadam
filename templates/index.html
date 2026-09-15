@@ -37,12 +37,14 @@
   <div class="brand"><div class="logo">✋</div><div><b>Қауіпсіз Қадам</b><small>Жасөспірімдер үшін</small></div></div>
   <nav class="nav">
     <button class="navbtn active" data-screen="home">🏠 Басты бет</button>
-    <button class="navbtn" data-screen="sos">🆘 SOS — көмек</button>
-    <button class="navbtn auth-only" data-screen="cases">📄 Менің өтініштерім</button>
+    <button class="navbtn student-only guest-only" data-screen="sos">🆘 SOS — көмек</button>
+    <button class="navbtn auth-only student-only" data-screen="cases">📄 Менің өтініштерім</button>
+    <button class="navbtn auth-only parent-only" data-screen="children">👨‍👩‍👧 Менің балаларым</button>
+    <button class="navbtn auth-only teacher-only" data-screen="cases">📋 Оқушылар өтініштері</button>
     <button class="navbtn" data-screen="ai">🤖 AI навигатор</button>
     <button class="navbtn" data-screen="tests">📘 Құқықтық тесттер</button>
     <button class="navbtn auth-only" data-screen="mentor">👥 Жетекшіге жазу</button>
-    <button class="navbtn staff-only" data-screen="dashboard">📊 Бақылау панелі</button>
+    <button class="navbtn teacher-only" data-screen="dashboard">📊 Бақылау панелі</button>
   </nav>
   <div class="sidebar-footer auth-only">
     <div class="role-chip" id="sideRole">Рөл</div>
@@ -69,7 +71,7 @@
           <p>Қауіпсіз қоғам — жарқын болашақ. Көмек сұрау — дұрыс қадам.</p>
           <div class="actions">
             <button class="btn primary go" data-screen="sos">❤ Маған көмек керек</button>
-            <button class="btn secondary" id="quickCaseBtn">⚡ Тез өтініш беру</button>
+            <button class="btn secondary student-only guest-only" id="quickCaseBtn">⚡ Тез өтініш беру</button>
           </div>
         </div>
         <div class="hero-art"><div class="orb o1"></div><div class="orb o2"></div><div class="teen"><div class="hair"></div><div class="head"></div><div class="body"></div></div></div>
@@ -83,18 +85,20 @@
 
       <div class="section-title"><h2>Негізгі мүмкіндіктер</h2></div>
       <div class="feature-grid">
-        <button class="feature go" data-screen="sos"><div class="feature-icon red">SOS</div><div><b>SOS</b><small>Көмек керек</small></div></button>
+        <button class="feature go student-only guest-only" data-screen="sos"><div class="feature-icon red">SOS</div><div><b>SOS</b><small>Көмек керек</small></div></button>
         <button class="feature go" data-screen="ai"><div class="feature-icon blue">💬</div><div><b>AI навигатор</b><small>Қазақша AI көмекшісі</small></div></button>
-        <button class="feature auth-only go" data-screen="cases"><div class="feature-icon green">🛡️</div><div><b>Менің өтініштерім</b><small>Өз өтініштеріңді бақыла</small></div></button>
+        <button class="feature auth-only student-only go" data-screen="cases"><div class="feature-icon green">🛡️</div><div><b>Менің өтініштерім</b><small>Тек өз өтініштеріңді бақыла</small></div></button>
+        <button class="feature auth-only parent-only go" data-screen="children"><div class="feature-icon green">👨‍👩‍👧</div><div><b>Менің балаларым</b><small>Балаларыңыз және олардың өтініштері</small></div></button>
+        <button class="feature auth-only teacher-only go" data-screen="cases"><div class="feature-icon green">📋</div><div><b>Оқушылар өтініштері</b><small>Барлық оқушы өтініштерін қарау</small></div></button>
         <button class="feature go" data-screen="tests"><div class="feature-icon purple">📄</div><div><b>Тесттер</b><small>Әр жолы жаңа сұрақтар</small></div></button>
         <button class="feature auth-only go" data-screen="mentor"><div class="feature-icon orange">👥</div><div><b>Жетекшіге жазу</b><small>Хабарлама жіберу</small></div></button>
-        <button class="feature staff-only go" data-screen="dashboard"><div class="feature-icon cyan">📊</div><div><b>Бақылау панелі</b><small>Рөлге сай статистика</small></div></button>
+        <button class="feature teacher-only go" data-screen="dashboard"><div class="feature-icon cyan">📊</div><div><b>Бақылау панелі</b><small>Барлық өтініш бойынша статистика</small></div></button>
       </div>
     </section>
 
     <section id="sos" class="screen">
       <div class="screen-head"><button class="back go" data-screen="home">‹</button><div><h2>Маған көмек керек</h2><p>Жағдайды таңда немесе тез өтініш жібер.</p></div></div>
-      <div class="help-banner"><div><span class="mini-label">ҚАУІПСІЗ ҚАДАМ</span><h3>Сен жалғыз емессің!</h3><p>Қауіпті жағдайда қауіпсіз жерге барып, сенімді ересек адамға хабарла.</p></div><button class="btn primary" id="sosQuickBtn">⚡ Тез өтініш</button></div>
+      <div class="help-banner"><div><span class="mini-label">ҚАУІПСІЗ ҚАДАМ</span><h3>Сен жалғыз емессің!</h3><p>Қауіпті жағдайда қауіпсіз жерге барып, сенімді ересек адамға хабарла.</p></div><button class="btn primary student-only guest-only" id="sosQuickBtn">⚡ Тез өтініш</button></div>
       <div class="panel">
         <div class="panel-title-row"><div><span class="mini-label">ЖАҒДАЙДЫ ТАҢДА</span><h3>Не болды?</h3></div><span class="panel-hint">Бір нұсқаны таңда</span></div>
         <div class="sos-grid">
@@ -105,7 +109,7 @@
         </div>
         <div id="sosFlow" class="help-flow hidden">
           <div><span class="mini-label">ТАҢДАЛҒАН</span><h3 id="sosChosen"></h3><p>Қазір тікелей қауіп бар ма?</p></div>
-          <div class="flow-actions"><button id="dangerYes" class="btn danger">Иә, қауіп бар</button><button id="dangerNo" class="btn secondary">Жоқ</button><button id="flowCaseBtn" class="btn primary hidden">Өтініш толтыру</button></div>
+          <div class="flow-actions"><button id="dangerYes" class="btn danger">Иә, қауіп бар</button><button id="dangerNo" class="btn secondary">Жоқ</button><button id="flowCaseBtn" class="btn primary hidden student-only guest-only">Өтініш толтыру</button></div>
         </div>
       </div>
     </section>
@@ -114,6 +118,16 @@
       <div class="screen-head"><button class="back go" data-screen="home">‹</button><div><h2 id="casesTitle">Менің өтініштерім</h2><p id="casesSub">Сізге қолжетімді өтініштер.</p></div></div>
       <div class="case-tabs"><button class="case-tab active" data-filter="all">Барлығы</button><button class="case-tab" data-filter="review">Қаралуда</button><button class="case-tab" data-filter="solved">Шешілген</button></div>
       <div id="caseList"></div>
+    </section>
+
+    <section id="children" class="screen auth-only parent-only">
+      <div class="screen-head"><button class="back go" data-screen="home">‹</button><div><h2>Менің балаларым</h2><p>Сізге байланыстырылған балалар және олардың өтініштері.</p></div></div>
+      <div id="childrenList" class="children-grid"></div>
+      <div id="childCasesPanel" class="panel hidden">
+        <div class="panel-title-row"><div><span class="mini-label">БАЛАНЫҢ ӨТІНІШТЕРІ</span><h3 id="selectedChildName">Бала</h3></div></div>
+        <div class="case-tabs"><button class="case-tab active" data-child-filter="all">Барлығы</button><button class="case-tab" data-child-filter="review">Қаралуда</button><button class="case-tab" data-child-filter="solved">Шешілген</button></div>
+        <div id="childCaseList"></div>
+      </div>
     </section>
 
     <section id="ai" class="screen">
@@ -141,7 +155,7 @@
       </div>
     </section>
 
-    <section id="dashboard" class="screen staff-only">
+    <section id="dashboard" class="screen teacher-only">
       <div class="screen-head"><button class="back go" data-screen="home">‹</button><div><h2>Бақылау панелі</h2><p id="dashboardDesc">Рөлге сай қолжетімді статистика.</p></div></div>
       <div class="dashboard-stats">
         <div class="dash-stat"><small>Барлық өтініш</small><strong id="statTotal">—</strong></div>
