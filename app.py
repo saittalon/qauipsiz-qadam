@@ -54,6 +54,8 @@ class MentorMessage(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     sender_user_id = db.Column(db.Integer)
     sender_role = db.Column(db.String(20), nullable=False)
+    recipient_user_id = db.Column(db.Integer, nullable=True)
+    conversation_student_id = db.Column(db.Integer, nullable=True)
     message = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.String(40), nullable=False)
 
@@ -128,6 +130,14 @@ def seed_demo_data():
 
 with app.app_context():
     db.create_all()
+    # Lightweight migration for the mentor/student chat on existing PostgreSQL databases.
+    try:
+        db.session.execute(db.text("ALTER TABLE mentor_message ADD COLUMN IF NOT EXISTS recipient_user_id INTEGER"))
+        db.session.execute(db.text("ALTER TABLE mentor_message ADD COLUMN IF NOT EXISTS conversation_student_id INTEGER"))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
     if os.environ.get("SEED_DEMO", "1") == "1":
         seed_demo_data()
 
@@ -355,23 +365,102 @@ def stats():
     })
 
 
-@app.post("/api/mentor")
+@app.get("/api/chat/students")
 @require_login
-def mentor_message():
+def chat_students():
+    user = current_user()
+    if user.role != "teacher":
+        return jsonify({"ok": False, "error": "Бұл бөлім мұғалімге арналған"}), 403
+    students = User.query.filter_by(role="student").order_by(User.full_name.asc()).all()
+    result = []
+    for s in students:
+        last = MentorMessage.query.filter_by(conversation_student_id=s.id).order_by(MentorMessage.id.desc()).first()
+        result.append({
+            "id": s.id, "full_name": s.full_name, "class_name": s.class_name, "age": s.age,
+            "last_message": last.message[:80] if last else "",
+            "last_at": last.created_at if last else ""
+        })
+    return jsonify(result)
+
+
+@app.get("/api/chat/messages")
+@require_login
+def chat_messages():
+    user = current_user()
+    if user.role == "teacher":
+        try:
+            student_id = int(request.args.get("student_id", "0"))
+        except ValueError:
+            student_id = 0
+        student = db.session.get(User, student_id)
+        if not student or student.role != "student":
+            return jsonify({"ok": False, "error": "Оқушы табылмады"}), 404
+    elif user.role == "student":
+        student = user
+        student_id = user.id
+    elif user.role == "parent":
+        if not user.linked_student_id:
+            return jsonify({"ok": False, "error": "Бала байланыстырылмаған"}), 400
+        student = db.session.get(User, user.linked_student_id)
+        student_id = user.linked_student_id
+    else:
+        return jsonify({"ok": False, "error": "Қолжетімсіз"}), 403
+
+    rows = MentorMessage.query.filter_by(conversation_student_id=student_id).order_by(MentorMessage.id.asc()).all()
+    return jsonify({
+        "student": {"id": student.id, "full_name": student.full_name, "class_name": student.class_name},
+        "messages": [{
+            "id": m.id, "sender_user_id": m.sender_user_id, "sender_role": m.sender_role,
+            "message": m.message, "created_at": m.created_at,
+            "mine": m.sender_user_id == user.id
+        } for m in rows]
+    })
+
+
+@app.post("/api/chat/messages")
+@require_login
+def send_chat_message():
     user = current_user()
     data = request.get_json(silent=True) or {}
     message = (data.get("message") or "").strip()
     if not message:
         return jsonify({"ok": False, "error": "Хабарлама бос болмауы керек"}), 400
 
+    teacher = User.query.filter_by(role="teacher").order_by(User.id.asc()).first()
+    if user.role == "teacher":
+        try:
+            student_id = int(data.get("student_id") or 0)
+        except (TypeError, ValueError):
+            student_id = 0
+        student = db.session.get(User, student_id)
+        if not student or student.role != "student":
+            return jsonify({"ok": False, "error": "Оқушыны таңдаңыз"}), 400
+        recipient_id = student.id
+    elif user.role == "student":
+        student_id = user.id
+        recipient_id = teacher.id if teacher else None
+    elif user.role == "parent":
+        student_id = user.linked_student_id
+        if not student_id:
+            return jsonify({"ok": False, "error": "Бала байланыстырылмаған"}), 400
+        recipient_id = teacher.id if teacher else None
+    else:
+        return jsonify({"ok": False, "error": "Қолжетімсіз"}), 403
+
     db.session.add(MentorMessage(
-        sender_user_id=user.id,
-        sender_role=user.role,
-        message=message,
-        created_at=datetime.now().strftime("%Y-%m-%d %H:%M"),
+        sender_user_id=user.id, sender_role=user.role, recipient_user_id=recipient_id,
+        conversation_student_id=student_id, message=message,
+        created_at=datetime.now().strftime("%Y-%m-%d %H:%M")
     ))
     db.session.commit()
     return jsonify({"ok": True})
+
+
+# Backward-compatible endpoint used by older cached frontend.
+@app.post("/api/mentor")
+@require_login
+def mentor_message():
+    return send_chat_message()
 
 
 QUIZ_BANK = [
